@@ -2,7 +2,7 @@ ARCH=arm
 CROSS_COMPILE=arm-linux-gnueabihf-
 
 obj-m=grove_lcd_driver.o
-KERNDIR=/home/yuhei_mobile/RaspberryPi/linux
+KERNDIR=$(HOME)/RaspberryPi/linux
 PWD=$(shell pwd)
 
 default:
