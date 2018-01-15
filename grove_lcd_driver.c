@@ -37,16 +37,16 @@
 
 // Registers
 // Character registers
-#define REG_DISPLAY           0x80
-#define REG_LETTERS           0x40
+#define TXT_REG_DISPLAY           0x80
+#define TXT_REG_LETTERS           0x40
 
 // Back light
-#define REG_MODE0             0x00
-#define REG_MODE1             0x01
-#define REG_PWM_BLUE          0x02
-#define REG_PWM_GREEN         0x03
-#define REG_PWM_RED           0x04
-#define REG_LED_OUT           0x05
+#define BKL_REG_MODE1             0x00
+#define BKL_REG_MODE2             0x01
+#define BKL_REG_PWM_BLUE          0x02
+#define BKL_REG_PWM_GREEN         0x03
+#define BKL_REG_PWM_RED           0x04
+#define BKL_REG_LED_OUT           0x05
 
 
 // ******************************************
@@ -109,8 +109,17 @@ int grove_lcd_write_val(struct i2c_client* client, u8 reg, u16 value)
 
 static int grove_lcd_init(struct i2c_client* client)
 {
-    // Send data to initialize
-    // TODO
+    //union grove_lcd_cmd cmd;
+    dev_info(&client->dev, "%s\n", __FUNCTION__);
+
+    // Initialize backlight
+    client->addr = GROVE_LCD_BACK_LIGHT;
+    grove_lcd_write_val(client, BKL_REG_MODE1,     0x00);
+    grove_lcd_write_val(client, BKL_REG_MODE2,     0x00);
+    grove_lcd_write_val(client, BKL_REG_PWM_BLUE,  0x7F); // Blue
+    grove_lcd_write_val(client, BKL_REG_PWM_GREEN, 0x7F); // Green
+    grove_lcd_write_val(client, BKL_REG_PWM_RED,   0x7F); // Red
+    grove_lcd_write_val(client, BKL_REG_LED_OUT,   0xAA);
     return 0;
 }
 

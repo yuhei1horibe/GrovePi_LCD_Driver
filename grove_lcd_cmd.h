@@ -22,7 +22,7 @@
 #define SET_CGRAM_ADDRESS          0x40
 #define SET_DDRAM_ADDRESS          0x80
 
-struct grove_lcd_cmd
+union grove_lcd_cmd
 {
     u8    command; // Command for Grove Pi LCD display
     union grove_lcd_cmd_params{
