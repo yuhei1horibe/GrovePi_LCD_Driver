@@ -38,7 +38,7 @@ struct grove_lcd_cmd
          */
         union params_entry_mode_set{
             u8 all;
-            struct params{
+            struct {
                 u8 shift_entire_display : 1;
                 u8 id_flag              : 1;
             } bits;
@@ -47,11 +47,11 @@ struct grove_lcd_cmd
         // Display on/off control parameter
         union params_display_on_off_ctl{
             u8 all;
-            struct params{
+            struct {
                 u8 cursor_blink_on_off  : 1;
                 u8 cursor_on_off        : 1;
                 u8 display_on_off       : 1;
-            } bits:
+            } bits;
         } display_on_off_ctl;
 
         // Cursor or display shift control parameter
@@ -66,12 +66,12 @@ struct grove_lcd_cmd
          */
         union params_cursor_or_display_shift{
             u8 all;
-            struct params{
+            struct {
                 u8 reserved             : 2;
                 u8 rl_sel               : 1;
                 u8 scroll_or_shift_sel  : 1;
-            } bits:
-        } display_on_off_ctl;
+            } bits;
+        } cursor_or_display_shift;
 
         // Function set control parametr
         /*
@@ -89,7 +89,7 @@ struct grove_lcd_cmd
          */
         union params_function_set{
             u8 all;
-            struct params{
+            struct {
                 u8 reserved             : 2;
                 u8 format_mode          : 1;
                 u8 line_number          : 1;
@@ -100,7 +100,7 @@ struct grove_lcd_cmd
         // Set CGRAM address
         union params_set_cgram_addr{
             u8 all;
-            struct params{
+            struct {
                 u8 address              : 5;
             };
         } set_cgram_address;
@@ -108,7 +108,7 @@ struct grove_lcd_cmd
         // Set DDRAM address
         union params_set_ddram_addr{
             u8 all;
-            struct params{
+            struct {
                 u8 address              : 6;
             };
         } set_ddram_address;
