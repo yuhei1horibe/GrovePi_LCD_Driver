@@ -99,7 +99,7 @@ int grove_lcd_write_val(struct i2c_client* client, u8 reg, u16 value)
     dev_info(&client->dev, "%s\n", __FUNCTION__);
 
     mutex_lock(&data->update_lock);
-    ret_val = i2c_smbus_read_byte_data(client, reg);
+    ret_val = i2c_smbus_write_byte_data(client, reg, value);
     mutex_unlock(&data->update_lock);
 
     dev_info(&client->dev, "%s : write reg [%02x] with val [%02x] returned [%d]\n", __FUNCTION__, reg, value, ret_val);
