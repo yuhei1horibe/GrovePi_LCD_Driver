@@ -182,6 +182,9 @@ static int grove_lcd_probe(struct i2c_client *client, const struct i2c_device_id
     int                      retval; // i2c status
     struct grove_lcd_device* data = NULL;
 
+    // Debug
+    printk("grove_lcd: %s\n", __FUNCTION__);
+
     // Allocate memory for device data
     data = devm_kzalloc(&client->dev, sizeof(struct grove_lcd_device), GFP_KERNEL);
 
@@ -328,8 +331,37 @@ static struct i2c_driver grove_lcd_driver = {
     .address_list   = grove_lcd_addr_list,
 };
 
+// i2c devices doesn't enumerate. Need to instantiate it.
+static struct i2c_board_info grove_lcd_board_info[] __initdata = 
+{
+    {
+        I2C_BOARD_INFO(GROVE_LCD_NAME, GROVE_LCD_TEXT),
+    },
+    {
+        I2C_BOARD_INFO(GROVE_LCD_NAME, GROVE_LCD_BACK_LIGHT),
+    },
+};
+
+static int __init grove_lcd_init_test(void)
+{
+    printk("%s: init.\n", GROVE_LCD_NAME);
+ 
+    // Register i2c board info
+    i2c_register_board_info(1, grove_lcd_board_info, ARRAY_SIZE(grove_lcd_board_info));
+    return i2c_add_driver(&grove_lcd_driver);
+}
+module_init(grove_lcd_init_test);
+ 
+static void __exit grove_lcd_cleanup(void)
+{
+    printk("%s: exit.\n", GROVE_LCD_NAME);
+ 
+    return i2c_del_driver(&grove_lcd_driver);
+}
+module_exit(grove_lcd_cleanup);
+
 // init and exit for this device
-module_i2c_driver(grove_lcd_driver);
+//module_i2c_driver(grove_lcd_driver);
 
 MODULE_AUTHOR("Yuhei Horibe <yuhei1.horibe@gmail.com>");
 MODULE_DESCRIPTION("Grove Pi color LCD driver.");
