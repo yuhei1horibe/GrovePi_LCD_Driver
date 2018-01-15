@@ -25,6 +25,8 @@
 #include <linux/module.h>
 #include <linux/bitops.h>
 
+#include "grove_lcd_cmd.h"
+
 
 // ******************************************
 // Address and register definitions
