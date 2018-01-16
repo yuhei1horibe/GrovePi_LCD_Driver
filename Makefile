@@ -2,7 +2,6 @@ ARCH=arm
 CROSS_COMPILE=arm-linux-gnueabihf-
 
 obj-m=grove_lcd.o
-grove_lcd_objs=grove_lcd_core.o grove_lcd_pru.o
 KERNDIR=$(HOME)/RaspberryPi/linux
 KERNEL_VER=$(shell uname -r)
 INSTALL_DIR=/lib/modules/$(KERNEL_VER)/kernel/drivers/grove_lcd
@@ -17,7 +16,7 @@ clean:
 $(INSTALL_DIR):
 	mkdir -p $(INSTALL_DIR)
 
-install: grove_lcd.ko $(INSTALL_DIR)
+install: $(INSTALL_DIR)
 	cp grove_lcd.ko $(INSTALL_DIR)/
 	depmod -a
 	modprobe grove_lcd
