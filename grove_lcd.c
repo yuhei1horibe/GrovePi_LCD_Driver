@@ -24,6 +24,7 @@
 #include <linux/err.h>
 #include <linux/module.h>
 #include <linux/bitops.h>
+#include <linux/delay.h>
 
 #include "grove_lcd_cmd.h"
 
@@ -46,7 +47,7 @@
 #define BKL_REG_PWM_BLUE          0x02
 #define BKL_REG_PWM_GREEN         0x03
 #define BKL_REG_PWM_RED           0x04
-#define BKL_REG_LED_OUT           0x05
+#define BKL_REG_LED_OUT           0x08
 
 
 // ******************************************
@@ -107,19 +108,141 @@ int grove_lcd_write_val(struct i2c_client* client, u8 reg, u16 value)
     return ret_val;
 }
 
+static int grove_lcd_clear_display(struct i2c_client* client)
+{
+    union grove_lcd_cmd cmd;
+
+    if(client->addr != GROVE_LCD_TEXT){
+        return -1;
+    }
+
+    // Clear display
+    cmd.command = 0;
+    cmd.command = CLEAR_DISPLAY;
+    grove_lcd_write_val(client, TXT_REG_DISPLAY, cmd.command);
+    msleep(1);
+
+    return 0;
+}
+
+static int grove_lcd_move_to_line2(struct i2c_client* client)
+{
+    union grove_lcd_cmd cmd;
+
+    if(client->addr != GROVE_LCD_TEXT){
+        return -1;
+    }
+
+    // Move cursor to line 2
+    client->addr                                = GROVE_LCD_TEXT;
+    cmd.command                                 = 0;
+    cmd.command                                 = SET_DDRAM_ADDRESS;
+    cmd.param.set_ddram_address.bits.address    = 0x40;
+    grove_lcd_write_val(client, TXT_REG_DISPLAY,cmd.command);
+    msleep(1);
+
+    return 0;
+}
+
 static int grove_lcd_init(struct i2c_client* client)
 {
-    //union grove_lcd_cmd cmd;
+    u8   tmp_addr      = client->addr;
+    int  i;
+    char init_line1[] = "Grove Pi";
+    char init_line2[] = "LCD driver";
+
+    union grove_lcd_cmd cmd;
     dev_info(&client->dev, "%s\n", __FUNCTION__);
 
     // Initialize backlight
     client->addr = GROVE_LCD_BACK_LIGHT;
     grove_lcd_write_val(client, BKL_REG_MODE1,     0x00);
     grove_lcd_write_val(client, BKL_REG_MODE2,     0x00);
-    grove_lcd_write_val(client, BKL_REG_PWM_BLUE,  0x7F); // Blue
-    grove_lcd_write_val(client, BKL_REG_PWM_GREEN, 0x7F); // Green
-    grove_lcd_write_val(client, BKL_REG_PWM_RED,   0x7F); // Red
+    grove_lcd_write_val(client, BKL_REG_PWM_BLUE,  0xFF); // Blue
+    grove_lcd_write_val(client, BKL_REG_PWM_GREEN, 0xFF); // Green
+    grove_lcd_write_val(client, BKL_REG_PWM_RED,   0xFF); // Red
     grove_lcd_write_val(client, BKL_REG_LED_OUT,   0xAA);
+
+    // Sleep
+    msleep(1);
+
+    // Initialize text screen
+    client->addr = GROVE_LCD_TEXT;
+
+    // Clear display
+    grove_lcd_clear_display(client);
+
+    // Display on
+    cmd.command                                       = 0;
+    cmd.command                                       = DISPLAY_ON_OFF_CTL;
+    cmd.param.display_on_off.bits.display_on_off      = 1;
+    cmd.param.display_on_off.bits.cursor_on_off       = 1;
+    cmd.param.display_on_off.bits.cursor_blink_on_off = 1;
+    grove_lcd_write_val(client, TXT_REG_DISPLAY, cmd.command);
+    msleep(1);
+
+    // Function set
+    cmd.command                                 = 0;
+    cmd.command                                 = FUNCTION_SET;
+    cmd.param.function_set.bits.data_length     = 1;
+    cmd.param.function_set.bits.line_number     = 1;
+    cmd.param.function_set.bits.format_mode     = 0;
+    grove_lcd_write_val(client, TXT_REG_DISPLAY,cmd.command);
+    msleep(1);
+
+    // Display texts
+    // Line 1
+    for(i = 0; i < sizeof(init_line1) - 1; i++) {
+        grove_lcd_write_val(client, TXT_REG_LETTERS, init_line1[i]);
+    }
+
+    // Line 2
+    grove_lcd_move_to_line2(client);
+    for(i = 0; i < sizeof(init_line2) - 1; i++) {
+        grove_lcd_write_val(client, TXT_REG_LETTERS, init_line2[i]);
+    }
+
+    client->addr = tmp_addr;
+
+    return 0;
+}
+
+static int grove_lcd_turnoff(struct i2c_client* client)
+{
+    u8                  tmp_addr = client->addr;
+    union grove_lcd_cmd cmd;
+
+    dev_info(&client->dev, "%s\n", __FUNCTION__);
+
+    // Initialize backlight
+    client->addr = GROVE_LCD_BACK_LIGHT;
+    grove_lcd_write_val(client, BKL_REG_MODE1,     0x00);
+    grove_lcd_write_val(client, BKL_REG_MODE2,     0x00);
+    grove_lcd_write_val(client, BKL_REG_PWM_BLUE,  0x00); // Blue
+    grove_lcd_write_val(client, BKL_REG_PWM_GREEN, 0x00); // Green
+    grove_lcd_write_val(client, BKL_REG_PWM_RED,   0x00); // Red
+    grove_lcd_write_val(client, BKL_REG_LED_OUT,   0xAA);
+    client->addr = tmp_addr;
+
+    msleep(1);
+
+    // Initialize text screen
+    client->addr = GROVE_LCD_TEXT;
+
+    // Clear display
+    grove_lcd_clear_display(client);
+
+    // Display off
+    cmd.command                                       = 0;
+    cmd.command                                       = DISPLAY_ON_OFF_CTL;
+    cmd.param.display_on_off.bits.display_on_off      = 0;
+    cmd.param.display_on_off.bits.cursor_on_off       = 0;
+    cmd.param.display_on_off.bits.cursor_blink_on_off = 0;
+    grove_lcd_write_val(client, TXT_REG_DISPLAY, cmd.command);
+    msleep(1);
+
+    client->addr = tmp_addr;
+
     return 0;
 }
 
@@ -160,8 +283,32 @@ static ssize_t grove_lcd_read(struct file *fp, char __user* buf, size_t count, l
 // Write function
 static ssize_t grove_lcd_write(struct file* fp, const char* __user buff, size_t count, loff_t* offset)
 {
-    // TODO
-    return 0;
+    static const int char_max = 80;
+    char*            tmp;
+    int              i;
+
+    if(count > char_max){
+        count = char_max;
+    }
+
+    // Copy user memory
+    tmp = memdup_user(buff, char_max);
+    if(IS_ERR(tmp)){
+        printk("%s: Failed to copy memory from user space\n", __FUNCTION__);
+        return PTR_ERR(tmp);
+    }
+
+    grove_lcd_clear_display(grove_lcd_client);
+    printk("%s: Write [%d] bytes\n", __FUNCTION__, count);
+
+    // Write data
+    for(i = 0; i < count; i++){
+        if(tmp[i] == '\n')
+            grove_lcd_move_to_line2(grove_lcd_client);
+        else
+            grove_lcd_write_val(grove_lcd_client, TXT_REG_LETTERS, tmp[i]);
+    }
+    return i;
 }
 
 // File operations
@@ -195,8 +342,10 @@ static int grove_lcd_probe(struct i2c_client *client, const struct i2c_device_id
 
     // Check if SMBUS operation is functional or not
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE))
+    {
         printk("%s: i2c device doesn't have capability of SMBUS.", GROVE_LCD_NAME);
         return -EIO;
+    }
 
     // Initialize i2c client data
     i2c_set_clientdata(client, data);
@@ -254,6 +403,9 @@ unreg_class:
 static int grove_lcd_remove(struct i2c_client * client)
 {
     printk("grove_lcd: %s\n", __FUNCTION__);
+
+    // Turn off LCD backlight
+    grove_lcd_turnoff(client);
  
     grove_lcd_client = NULL;
  
@@ -287,7 +439,7 @@ static int grove_lcd_detect(struct i2c_client* client, struct i2c_board_info* in
     // we update the name of the driver. This must
     // match the name of the chip_driver struct below
     // in order for this driver to be loaded.
-    if (address == GROVE_LCD_TEXT) {
+    if(address == GROVE_LCD_TEXT) {
         name = GROVE_LCD_NAME;
         dev_info(&adapter->dev, "grove_lcd_device found at 0x%02x\n", address);
     }
@@ -332,36 +484,37 @@ static struct i2c_driver grove_lcd_driver = {
 };
 
 // i2c devices doesn't enumerate. Need to instantiate it.
-static struct i2c_board_info grove_lcd_board_info[] __initdata = 
-{
-    {
-        I2C_BOARD_INFO(GROVE_LCD_NAME, GROVE_LCD_TEXT),
-    },
-    {
-        I2C_BOARD_INFO(GROVE_LCD_NAME, GROVE_LCD_BACK_LIGHT),
-    },
-};
+//static struct i2c_board_info grove_lcd_board_info[] __initdata = 
+//{
+//    {
+//        I2C_BOARD_INFO(GROVE_LCD_NAME, GROVE_LCD_TEXT),
+//    },
+//    {
+//        I2C_BOARD_INFO(GROVE_LCD_NAME, GROVE_LCD_BACK_LIGHT),
+//    },
+//};
 
-static int __init grove_lcd_init_test(void)
-{
-    printk("%s: init.\n", GROVE_LCD_NAME);
- 
-    // Register i2c board info
-    i2c_register_board_info(1, grove_lcd_board_info, ARRAY_SIZE(grove_lcd_board_info));
-    return i2c_add_driver(&grove_lcd_driver);
-}
-module_init(grove_lcd_init_test);
- 
-static void __exit grove_lcd_cleanup(void)
-{
-    printk("%s: exit.\n", GROVE_LCD_NAME);
- 
-    return i2c_del_driver(&grove_lcd_driver);
-}
-module_exit(grove_lcd_cleanup);
+// It didn't work
+//static int __init grove_lcd_init_test(void)
+//{
+//    printk("%s: init.\n", GROVE_LCD_NAME);
+// 
+//    // Register i2c board info
+//    i2c_register_board_info(1, grove_lcd_board_info, ARRAY_SIZE(grove_lcd_board_info));
+//    return i2c_add_driver(&grove_lcd_driver);
+//}
+//module_init(grove_lcd_init_test);
+// 
+//static void __exit grove_lcd_cleanup(void)
+//{
+//    printk("%s: exit.\n", GROVE_LCD_NAME);
+// 
+//    return i2c_del_driver(&grove_lcd_driver);
+//}
+//module_exit(grove_lcd_cleanup);
 
 // init and exit for this device
-//module_i2c_driver(grove_lcd_driver);
+module_i2c_driver(grove_lcd_driver);
 
 MODULE_AUTHOR("Yuhei Horibe <yuhei1.horibe@gmail.com>");
 MODULE_DESCRIPTION("Grove Pi color LCD driver.");

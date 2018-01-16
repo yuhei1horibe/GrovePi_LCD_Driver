@@ -4,6 +4,8 @@ CROSS_COMPILE=arm-linux-gnueabihf-
 obj-m=grove_lcd.o
 grove_lcd_objs=grove_lcd_core.o grove_lcd_pru.o
 KERNDIR=$(HOME)/RaspberryPi/linux
+KERNEL_VER=`uname -r`
+INSTALL_DIR=/lib/modules/$(KERNEL_VER)/kernel/drivers/grove_lcd
 PWD=$(shell pwd)
 
 default:
@@ -11,4 +13,12 @@ default:
 
 clean:
 	$(MAKE) -C $(KERNDIR) M=$(PWD) ARCH=$(ARCH) clean
+
+install:
+	#mkdir $(INSTALL_DIR)
+	cp grove_lcd.ko $(INSTALL_DIR)/
+	depmod -a
+	modprobe grove_lcd
+	gpio load i2c
+	echo "grove_lcd 0x3e" > /sys/bus/i2c/devices/i2c-1/new_device
 

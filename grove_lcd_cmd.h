@@ -52,7 +52,7 @@ union grove_lcd_cmd
                 u8 cursor_on_off        : 1;
                 u8 display_on_off       : 1;
             } bits;
-        } display_on_off_ctl;
+        } display_on_off;
 
         // Cursor or display shift control parameter
         /*
@@ -101,16 +101,16 @@ union grove_lcd_cmd
         union params_set_cgram_addr{
             u8 all;
             struct {
-                u8 address              : 5;
-            };
+                u8 address              : 6;
+            } bits;
         } set_cgram_address;
 
         // Set DDRAM address
         union params_set_ddram_addr{
             u8 all;
             struct {
-                u8 address              : 6;
-            };
+                u8 address              : 7;
+            }bits ;
         } set_ddram_address;
     } param;
 };
