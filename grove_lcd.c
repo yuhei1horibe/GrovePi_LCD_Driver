@@ -38,16 +38,16 @@
 
 // Registers
 // Character registers
-#define TXT_REG_DISPLAY           0x80
-#define TXT_REG_LETTERS           0x40
+#define TXT_REG_DISPLAY       0x80
+#define TXT_REG_LETTERS       0x40
 
 // Back light
-#define BKL_REG_MODE1             0x00
-#define BKL_REG_MODE2             0x01
-#define BKL_REG_PWM_BLUE          0x02
-#define BKL_REG_PWM_GREEN         0x03
-#define BKL_REG_PWM_RED           0x04
-#define BKL_REG_LED_OUT           0x08
+#define BKL_REG_MODE1         0x00
+#define BKL_REG_MODE2         0x01
+#define BKL_REG_PWM_BLUE      0x02
+#define BKL_REG_PWM_GREEN     0x03
+#define BKL_REG_PWM_RED       0x04
+#define BKL_REG_LED_OUT       0x08
 
 
 // ******************************************
@@ -134,7 +134,6 @@ static int grove_lcd_move_to_line2(struct i2c_client* client)
     }
 
     // Move cursor to line 2
-    client->addr                                = GROVE_LCD_TEXT;
     cmd.command                                 = 0;
     cmd.command                                 = SET_DDRAM_ADDRESS;
     cmd.param.set_ddram_address.bits.address    = 0x40;
@@ -406,7 +405,6 @@ static int grove_lcd_remove(struct i2c_client * client)
 
     // Turn off LCD backlight
     grove_lcd_turnoff(client);
- 
     grove_lcd_client = NULL;
  
     // Destroy device
